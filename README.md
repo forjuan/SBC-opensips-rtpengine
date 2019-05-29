@@ -1,0 +1,106 @@
+# opensips + rtpengine as SBC (一)
+
+## 需求背景
+已有SIP server 服务器以及 运营商的接入系统， 可以在内网中通过软电话或标准的SIP电话注册使用， 现有需求要在外网中通过web浏览器接入已有SIP server并且能与普通的sip电话或普通电话通话。
+
+研究结果： 由于各种原因在虚拟机上，在内网中 可以使用web端电话正常拨打和接听电话， 外网因为安全和成本原因未做检验，但通过大量学习和了解得出了解决方案，但未做实践。
+
+## 技术术语简介
+
+### SIP & SDP
+
+SIP: Session Initiation Protocol, 会话初始协议, 是一个应用层的信令控制协议。用于创建、修改和释放一个或多个参与者的会话。这些会话可以是Internet多媒体会议 [3]  、IP电话或多媒体分发。会话的参与者可以通过组播（multicast）、网状单播（unicast）或两者的混合体进行通信。(百度百科解释)[https://baike.baidu.com/item/SIP/33921?fromtitle=SIP%E5%8D%8F%E8%AE%AE&fromid=1179615]
+
+一个简单的栗子， A 像SIP server 注册自己的IP等信息到SIP server中(在内网，基于UDP传输案例)
+
+Via: SIP/2.0/UDP 172.31.12.250:65469;branch=z9hG4bK-524287-1---952ee328836c5c4b;rport
+
+Max-Forwards: 70
+
+Contact: <sip:alice@XXX.XXX.XX.XX:65469;rinstance=fecf91aaaba88943>
+
+To: "xx"<sip:alice@XXX.XXX.XX.XX:5060>
+
+From: "xx"<sip:alice@XXX.XXX.XX.XX:5060>;tag=3af47657
+
+Call-ID: 97576NDQ4NzVmNTMzODE0NjJjY2VkNGVjY2EyYzJjNTVmMjc
+
+[Call-ID: 97576NDQ4NzVmNTMzODE0NjJjY2VkNGVjY2EyYzJjNTVmMjc]
+
+CSeq: 1 REGISTER
+
+Expires: 3600
+
+Allow: OPTIONS, SUBSCRIBE, NOTIFY, INVITE, ACK, CANCEL, BYE, REFER, INFO, MESSAGE
+
+User-Agent: X-Lite release 5.5.0 stamp 97576
+
+Content-Length: 0
+
+此时A向XXX.XXX.XX.XX:5060 server注册自己，注册的账号是alice,对应的IP地址是172.31.12.250 端口号是 65469, 此时在sip 服务器中就知道如何联系账号alice，当有人打电话给alice时，sip 服务器就把消息传回到这个账号注册的IP地址及端口中。
+
+
+若有电话进入， 或者主动外呼电话时，alice将收到或者发出以下消息，即INVITE消息， 具体可以参见sip协议规范，在INVITE消息中包含了要呼叫的对方的账号,以及重要的SDP消息.SDP(Session Description Protocol, 会话描述协议),描述的是流媒体的初始化参数, 即描述自己所提供的流媒体相关参数，以便于告知对方如何接收流媒体。
+
+
+INVITE sip:7005@XXX.XXX.XX.XX::5060 SIP/2.0
+
+Via: SIP/2.0/UDP 172.31.33.123:5060;branch=z9hG4bK921993;rport
+
+Max-Forwards: 69
+
+To:  <sip:bob@XXX.XXX.XX.XX::5060>
+
+From:  <sip:bob@XXX.XXX.XX.XX::5060>;tag=5cql1dkiof
+
+Call-ID: cu2qavrrrce88907u83i
+
+CSeq: 8200 INVITE
+
+Contact:  <sip:7000@172.31.33.123:5060;ob>
+
+Content-Type: application/sdp
+
+Session-Expires: 90
+
+Allow: INVITE,ACK,CANCEL,BYE,UPDATE,MESSAGE,OPTIONS,REFER,INFO
+
+Supported: timer,ice,replaces,outbound
+
+User-Agent: JsSIP 3.3.6
+
+Content-Length: 1740
+
+以下是SDP消息内容
+
+v=0
+
+o=- 4 2 IN IP4 172.17.21.62
+
+s=CounterPath eyeBeam 1.5
+
+c=IN IP4 172.17.21.62
+
+t=0 0
+
+m=audio 16488 RTP/AVP 8 0 101
+
+a=alt:1 4 : t3Lhm2wL Hza05oKO 172.17.21.62 16488
+
+a=alt:2 3 : ItLU9Cu0 W3eRtbf5 169.254.192.135 16488
+
+a=alt:3 2 : Ss2IB0xI O8kHR1FH 192.168.188.1 16488
+
+a=alt:4 1 : lQ9z0sO6 BLEm6E/3 192.168.182.1 16488
+
+a=fmtp:101 0-15
+
+a=rtpmap:101 telephone-event/8000
+
+a=sendrecv
+
+a=x-rtp-session-id:FFDEF6F81978455F97E0BA0A4DB81DE2
+
+现在web端使用SIP客户端可以使用sipjs、jsSIP、sipml5。SIP web测的客户端的媒体都是与webrtc结合使用的。收到INVITE消息后，这些库已经帮你调用了webrtc。但就是由于它已经做好了这些封装，所以更难理解媒体是如何传输的。这里暂时不展开说webrtc的工作原理。
+
+这仅仅是SIP协议，但是如何传输SIP协议并没有明确规定，所以有了灵活性，也使得在web端拨打sip电话成为可能，传统的SIP电话几乎都是基于UDP传输协议作为SIP的信令层。由于web端浏览器没有提供使用UDP的接口，所以多数解决方案是使用websocket传输SIP的信令。
