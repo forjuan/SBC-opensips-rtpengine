@@ -1,4 +1,4 @@
-# opensips + rtpengine as SBC
+# 使用opensips + rtpengine + webrtc 充当SBC
 
 ## 需求背景
 已有SIP server 服务器以及 运营商的接入系统， 可以在内网中通过软电话或标准的SIP电话注册使用， 现有需求要在外网中通过web浏览器接入已有SIP server并且能与普通的sip电话或普通电话通话 我们需要类似SBC的功能。
