@@ -7,6 +7,6 @@
 
 
 ## 详情
-[opensips + rtpengine as SBC(一)](https://github.com/forjuan/SBC-opensips-rtpengine/blob/master/docs/1.md)
+[使用opensips + rtpengine + webrtc 充当SBC(一)](https://github.com/forjuan/SBC-opensips-rtpengine/blob/master/docs/1.md)
 
-[opensips + rtpengine as SBC(二)](https://github.com/forjuan/SBC-opensips-rtpengine/blob/master/docs/2.md)
+[使用opensips + rtpengine + webrtc 充当SBC(二)](https://github.com/forjuan/SBC-opensips-rtpengine/blob/master/docs/2.md)
